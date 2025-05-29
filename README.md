@@ -1,21 +1,9 @@
-# Curso GRATUITO de Laravel 11.x
-
-- :movie_camera: [Acesse o Curso](https://academy.especializati.com.br/curso/laravel-11-completo-e-gratuito).
+# Laravel com postgress
 
 
-Links Úteis:
-
-- :tada: [Saiba Mais](https://linktr.ee/especializati)
 
 ## Passo a passo para rodar o projeto
 Clone o projeto
-```sh
-git clone https://github.com/especializati/curso-laravel-11 laravel-11
-```
-```sh
-cd laravel-11/
-```
-
 
 Crie o Arquivo .env
 ```sh
@@ -23,26 +11,77 @@ cp .env.example .env
 ```
 
 
-Atualize essas variáveis de ambiente no arquivo .env
+parte do DB no .env
 ```dosini
-APP_NAME="Especializa Ti"
-APP_URL=http://localhost:8989
-
-DB_CONNECTION=mysql
-DB_HOST=mysql
-DB_PORT=3306
-DB_DATABASE=nome_que_desejar_db
-DB_USERNAME=nome_usuario
-DB_PASSWORD=senha_aqui
-
-CACHE_DRIVER=redis
-QUEUE_CONNECTION=redis
-SESSION_DRIVER=redis
-
-REDIS_HOST=redis
-REDIS_PASSWORD=null
-REDIS_PORT=6379
+DB_CONNECTION=pgsql
+DB_HOST=postgres
+DB_PORT=5432
+DB_DATABASE=laravel
+DB_USERNAME=username
+DB_PASSWORD=root
 ```
+# Parte do .yml
+
+```yml
+services:
+    # image project
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        restart: unless-stopped
+        working_dir: /var/www/
+        volumes:
+            - ./:/var/www
+        depends_on:
+            - redis
+            - postgres
+        networks:
+            - laravel
+
+    # nginx
+    nginx:
+        image: nginx:alpine
+        restart: unless-stopped
+        ports:
+            - "8000:80"
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx/:/etc/nginx/conf.d/
+        networks:
+            - laravel
+
+    # PostgreSQL
+    postgres:
+        image: postgres:16
+        platform: linux/x86_64
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: ${DB_DATABASE:-laravel}
+            POSTGRES_USER: ${DB_USERNAME:-username}
+            POSTGRES_PASSWORD: ${DB_PASSWORD:-root}
+        volumes:
+            - ./.docker/postgres/data:/var/lib/postgresql/data
+        ports:
+            - "5432:5432"
+        networks:
+            - laravel
+
+    # pgAdmin
+    pgadmin:
+        image: dpage/pgadmin4
+        platform: linux/x86_64
+        restart: unless-stopped
+        ports:
+            - "5050:80"
+        environment:
+            PGADMIN_DEFAULT_EMAIL: admin@example.com
+            PGADMIN_DEFAULT_PASSWORD: admin123
+        networks:
+            - laravel
+        depends_on:
+            - postgres
+'''
 
 
 Suba os containers do projeto
@@ -71,3 +110,5 @@ php artisan key:generate
 
 Acesse o projeto
 [http://localhost:8989](http://localhost:8989)
+
+Adicione libpq-dev \ no Dockerfile - Primeiro run
